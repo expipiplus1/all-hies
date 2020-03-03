@@ -1,0 +1,28 @@
+diff --git a/src/Haskell/Ide/Engine/Server.hs b/src/Haskell/Ide/Engine/Server.hs
+index 5191d45c..ca626463 100644
+--- a/src/Haskell/Ide/Engine/Server.hs
++++ b/src/Haskell/Ide/Engine/Server.hs
+@@ -930,7 +930,11 @@ requestDiagnostics DiagnosticsRequest{trigger, file, trackingNumber, documentVer
+             callbackl :: forall m. MonadIO m => Map.Map Uri (S.Set Diagnostic) -> m ()
+             callbackl pd = do
+               liftIO $ logm $ "LspStdio.callbackl called with pd=" ++ show pd
+-              let diags = Map.toList $ S.toList <$> pd
++              let isBadDiag :: Diagnostic -> Bool
++                  isBadDiag d = d ^. J.message == "" -- && d ^. (J.location . J.range) == J.Range (J.Position 0 0) (J.Position 0 0)
++              let diags = Map.toList $ Map.mapMaybe (\l -> case filter (not . isBadDiag) l of
++                                                             [] -> Nothing
++                                                             ds' -> Just (ds')) $ S.toList <$> pd
+               case diags of
+                 [] -> liftIO sendEmpty
+                 _ -> mapM_ (liftIO . sendOne) diags
+@@ -977,7 +981,9 @@ requestDiagnosticsNormal tn file mVer = do
+           reactorSend $ NotShowMessage $
+             fmServerShowMessageNotification J.MtError
+               $ "Got error while processing diagnostics: " <> e
+-        let ds = Map.toList $ S.toList <$> pd
++        let isBadDiag :: Diagnostic -> Bool
++            isBadDiag d = d ^. J.message == "" -- && d ^. (J.location . J.range) == J.Range (J.Position 0 0) (J.Position 0 0)
++        let ds = Map.toList $ Map.filter (not . null) $ Map.map (filter (not . isBadDiag)) $ S.toList <$> pd
+         case ds of
+           [] -> sendEmpty
+           _ -> do
