@@ -3,7 +3,7 @@ self: super: {
     patches = (old.patches or []) ++ [../exactprint-extensions.patch];
   });
   haskell-ide-engine = super.haskell-ide-engine.overrideAttrs (old: {
-    patches = (old.patches or []) ++ [../no-bad-diag.patch];
+    patches = (old.patches or []) ++ [../no-bad-diag.patch ../internal-last.patch];
   });
   hie-plugin-api = super.hie-plugin-api.overrideAttrs (old: {
     patches = (old.patches or []) ++ [../percent.patch];
